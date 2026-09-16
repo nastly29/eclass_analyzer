@@ -11,14 +11,16 @@ def render_sidebar():
             }
             
             [data-testid="stSidebar"][aria-expanded="false"] {
-                margin-left: -350px;
+                margin-left: -350px !important;
+                visibility: hidden !important;
             }
 
             [data-testid="stSidebarCollapsedControl"] {
                 display: block !important;
-                z-index: 1000001;
+                visibility: visible !important;
+                z-index: 1000001 !important;
             }
-            
+
             [data-testid="stFileUploaderDropzone"] {
                 display: flex;
                 flex-direction: column;
