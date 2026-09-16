@@ -1,4 +1,5 @@
 streamlit
 pandas
 torch
+torchvision
 sentence-transformers
