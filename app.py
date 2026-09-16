@@ -9,6 +9,7 @@ from ui.dashboard import render_dashboard
 st.set_page_config(
     page_title="ECLASS Diff & Mapping Tool",
     layout="wide",
+    initial_sidebar_state="expanded",
 )
 
 st.title("Система порівняння та мапінгу ECLASS")
