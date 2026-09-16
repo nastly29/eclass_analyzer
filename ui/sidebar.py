@@ -10,6 +10,15 @@ def render_sidebar():
                 max-width: 350px;
             }
             
+            [data-testid="stSidebar"][aria-expanded="false"] {
+                margin-left: -350px;
+            }
+
+            [data-testid="stSidebarCollapsedControl"] {
+                display: block !important;
+                z-index: 1000001;
+            }
+            
             [data-testid="stFileUploaderDropzone"] {
                 display: flex;
                 flex-direction: column;
