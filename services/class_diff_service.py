@@ -15,6 +15,25 @@ def get_added_classes(cc15: pd.DataFrame, cc16: pd.DataFrame) -> pd.DataFrame:
 
     return result_df
 
+def get_all_deleted_classes(
+    cc15: pd.DataFrame, cc16: pd.DataFrame
+) -> pd.DataFrame:
+    ids_15 = set(cc15["ClassID"])
+    ids_16 = set(cc16["ClassID"])
+
+    deleted_ids = ids_15 - ids_16
+    if not deleted_ids:
+        return pd.DataFrame()
+
+    deleted_df = cc15[cc15["ClassID"].isin(deleted_ids)].copy()
+
+    cols = ["IrdiCC", "ClassID", "CodedName", "PreferredName", "Definition"]
+    avail_cols = [c for c in cols if c in deleted_df.columns]
+
+    result_df = deleted_df[avail_cols].copy()
+    result_df["Статус"] = "Вилучено в оновленій версії"
+
+    return result_df
 
 def get_exact_word_diff(old_text: str, new_text: str) -> str:
     if old_text == new_text:

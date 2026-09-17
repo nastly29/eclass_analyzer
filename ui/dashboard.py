@@ -1,6 +1,5 @@
 import streamlit as st
 
-
 def render_dashboard(
     summary_df,
     segment_stats_df,
@@ -8,6 +7,7 @@ def render_dashboard(
     added_df,
     changes_df,
     similarity_threshold,
+    all_deleted_df=None,  
 ):
     st.markdown(
         """
@@ -160,19 +160,40 @@ def render_dashboard(
         st.dataframe(segment_stats_df, use_container_width=True)
 
     with tab2:
-        st.write("### Мапінг вилучених класів та їх потенційних замінників")
+        st.caption("**Оберіть режим перегляду вилучених класів:**")
+        
+        subtab_mapped, subtab_all = st.tabs(
+            ["З замінниками", "Без замінників"]
+        )
 
-        sim_col = "Замінник #1 Схожість (%)"
-        if sim_col in deleted_mapping_df.columns:
-            low_confidence = deleted_mapping_df[
-                deleted_mapping_df[sim_col] < similarity_threshold
-            ]
-            if not low_confidence.empty:
-                st.warning(
-                    f"Знайдено {len(low_confidence)} класів зі схожістю нижче {similarity_threshold}% (потребують ручної перевірки)."
-                )
+        with subtab_mapped:
+            st.write("#### Мапінг вилучених класів та їх потенційних замінників")
 
-        st.dataframe(deleted_mapping_df, use_container_width=True)
+            sim_col = "Замінник #1 Схожість (%)"
+            if (
+                deleted_mapping_df is not None
+                and not deleted_mapping_df.empty
+                and sim_col in deleted_mapping_df.columns
+            ):
+                low_confidence = deleted_mapping_df[
+                    deleted_mapping_df[sim_col] < similarity_threshold
+                ]
+                if not low_confidence.empty:
+                    st.warning(
+                        f"Знайдено {len(low_confidence)} класів зі схожістю нижче {similarity_threshold}% (потребують ручної перевірки)."
+                    )
+
+            if deleted_mapping_df is not None and not deleted_mapping_df.empty:
+                st.dataframe(deleted_mapping_df, use_container_width=True)
+            else:
+                st.info("Не знайдено вилучених класів для обраних сегментів.")
+
+        with subtab_all:
+            st.write("#### Повний перелік усіх вилучених класів")
+            if all_deleted_df is not None and not all_deleted_df.empty:
+                st.dataframe(all_deleted_df, use_container_width=True)
+            else:
+                st.info("Вилучені класи відсутні.")
 
     with tab3:
         st.write("### Нові класи в оновленій версії")
@@ -185,37 +206,69 @@ def render_dashboard(
     with tab5:
         st.write("### Експорт всіх готових CSV-звітів")
 
-        st.download_button(
-            "Завантажити 'Загальна підсумкова статистика'",
-            data=summary_df.to_csv(sep=";", index=False).encode("utf-8-sig"),
-            file_name="ECLASS_Summary_Statistics.csv",
-            mime="text/csv",
-        )
+        @st.cache_data
+        def convert_df_to_csv(df):
+            if df is not None and not df.empty:
+                return df.to_csv(sep=";", index=False).encode("utf-8-sig")
+            return b""
 
-        st.download_button(
-            "Завантажити 'Статистика за сегментами'",
-            data=segment_stats_df.to_csv(sep=";", index=False).encode("utf-8-sig"),
-            file_name="ECLASS_Segment_Statistics.csv",
-            mime="text/csv",
-        )
+        csv_summary = convert_df_to_csv(summary_df)
+        csv_segment = convert_df_to_csv(segment_stats_df)
+        csv_added = convert_df_to_csv(added_df)
+        csv_deleted_map = convert_df_to_csv(deleted_mapping_df)
+        csv_all_deleted = convert_df_to_csv(all_deleted_df)
+        csv_changes = convert_df_to_csv(changes_df)
 
-        st.download_button(
-            "Завантажити 'Додані класи'",
-            data=added_df.to_csv(sep=";", index=False).encode("utf-8-sig"),
-            file_name="ECLASS_Added_Classes.csv",
-            mime="text/csv",
-        )
+        if csv_summary:
+            st.download_button(
+                "Завантажити 'Загальна підсумкова статистика'",
+                data=csv_summary,
+                file_name="ECLASS_Summary_Statistics.csv",
+                mime="text/csv",
+                key="btn_dl_summary",
+            )
 
-        st.download_button(
-            "Завантажити 'Вилучені класи'",
-            data=deleted_mapping_df.to_csv(sep=";", index=False).encode("utf-8-sig"),
-            file_name="ECLASS_Deleted_Classes_Mapping.csv",
-            mime="text/csv",
-        )
+        if csv_segment:
+            st.download_button(
+                "Завантажити 'Статистика за сегментами'",
+                data=csv_segment,
+                file_name="ECLASS_Segment_Statistics.csv",
+                mime="text/csv",
+                key="btn_dl_segment",
+            )
 
-        st.download_button(
-            "Завантажити 'Внутрішні зміни класів'",
-            data=changes_df.to_csv(sep=";", index=False).encode("utf-8-sig"),
-            file_name="ECLASS_Internal_Changes.csv",
-            mime="text/csv",
-        )
+        if csv_added:
+            st.download_button(
+                "Завантажити 'Додані класи'",
+                data=csv_added,
+                file_name="ECLASS_Added_Classes.csv",
+                mime="text/csv",
+                key="btn_dl_added",
+            )
+
+        if csv_deleted_map:
+            st.download_button(
+                "Завантажити 'Вилучені класи з потенційними замінниками'",
+                data=csv_deleted_map,
+                file_name="ECLASS_Deleted_Classes_Mapping.csv",
+                mime="text/csv",
+                key="btn_dl_deleted_map",
+            )
+
+        if csv_all_deleted:
+            st.download_button(
+                "Завантажити 'Вилучені класи'",
+                data=csv_all_deleted,
+                file_name="ECLASS_All_Deleted_Classes.csv",
+                mime="text/csv",
+                key="btn_dl_all_deleted",
+            )
+
+        if csv_changes:
+            st.download_button(
+                "Завантажити 'Внутрішні зміни класів'",
+                data=csv_changes,
+                file_name="ECLASS_Internal_Changes.csv",
+                mime="text/csv",
+                key="btn_dl_changes",
+            )

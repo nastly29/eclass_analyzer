@@ -1,6 +1,4 @@
 import pandas as pd
-#import torch
-#from config import CACHE_FILE, MODEL_NAME
 from config import MODEL_NAME
 from sentence_transformers import SentenceTransformer, util
 
@@ -47,7 +45,7 @@ def _build_full_text_with_properties(
 
 
 def get_deleted_classes_with_mapping(
-    data: dict, top_k: int = 3, progress_callback=None
+    data: dict, top_k: int = 3, selected_segments: list = None, progress_callback=None
 ) -> pd.DataFrame:
     cc15, cc16 = data["cc15"], data["cc16"]
     cc_pr15, cc_pr16 = data["cc_pr15"], data["cc_pr16"]
@@ -64,19 +62,22 @@ def get_deleted_classes_with_mapping(
     cc15_rich = _build_full_text_with_properties(cc15, cc_pr15, pr15)
     deleted_df = cc15_rich[cc15_rich["ClassID"].isin(deleted_ids)].copy()
 
+    if selected_segments:
+        deleted_df["Segment"] = (
+            deleted_df["CodedName"]
+            .astype(str)
+            .str.strip()
+            .str.zfill(8)
+            .str[:2]
+        )
+        deleted_df = deleted_df[deleted_df["Segment"].isin(selected_segments)].copy()
+
+    if deleted_df.empty:
+        return pd.DataFrame()
+
     if progress_callback:
         progress_callback(10, 100)
 
-    #if CACHE_FILE.exists():
-        #embeddings_16 = torch.load(CACHE_FILE)
-    #else:
-        #embeddings_16 = MODEL.encode(
-            #cc16_rich["FullText"].tolist(),
-            #convert_to_tensor=True,
-            #batch_size=256,
-            #show_progress_bar=False,
-        #)
-        #torch.save(embeddings_16, CACHE_FILE)
     embeddings_16 = MODEL.encode(
         cc16_rich["FullText"].tolist(),
         convert_to_tensor=True,

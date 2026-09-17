@@ -1,5 +1,6 @@
 import streamlit as st
-
+import pandas as pd
+from data.data_loader import extract_available_segments, _read_csv
 
 def render_sidebar():
     st.markdown(
@@ -71,16 +72,38 @@ def render_sidebar():
             "Властивості (PR_en.csv)", type=["csv"], key=f"pr_new_{reset_id}"
         )
 
+    available_segments = []
+    if cc_old is not None:
+        try:
+            temp_cc15 = _read_csv(cc_old)
+            available_segments = extract_available_segments(temp_cc15)
+        except Exception:
+            available_segments = []
+
     st.sidebar.header("2. Налаштування аналізу")
-    top_k = st.sidebar.slider(
-        "Кількість замінників (Top-K):", 1, 5, 3, key=f"top_k_{reset_id}"
+
+    selected_segments = st.sidebar.multiselect(
+        "Сегменти для мапінгу:",
+        options=available_segments,
+        default=[],
+        placeholder="Обрати всі сегменти" if available_segments else "Завантажте класи (CC_en.csv)...",
+        help="Оберіть конкретні сегменти для пошуку замінників. Якщо залишити порожнім, то мапінг буде виконано для ВСІХ сегментів."
     )
+
+    top_k = st.sidebar.slider(
+        "Кількість замінників (Top-K):", 
+        1, 5, 3, 
+        key=f"top_k_{reset_id}",
+        help="Кількість потенційних замінників з нової версії для кожного вилученого класу."
+    )
+
     similarity_threshold = st.sidebar.slider(
         "Поріг схожості для попередження (%):",
         50,
         90,
         75,
         key=f"sim_threshold_{reset_id}",
+        help="Мінімальний % схожості. Нижчий результат буде позначено як такий, що потребує перевірки."
     )
 
     files_uploaded = {
@@ -121,4 +144,4 @@ def render_sidebar():
             "Завантажте всі 6 CSV-файлів (по 3 для кожної версії) для активації кнопки."
         )
 
-    return btn_run, files_uploaded, top_k, similarity_threshold
+    return btn_run, files_uploaded, top_k, similarity_threshold, selected_segments
